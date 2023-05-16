@@ -4,7 +4,7 @@ This demonstration will require Open API to be active in an Azure Subscription. 
 
 ## Pre work
 
-1. Sign into you Azure Subscription with Open AI and open The Azure OpenAI resource. 
+1. Sign into your Azure Subscription with Open AI and open The Azure OpenAI resource. 
 2. Click **Model Deployments**.
 3. If a Chat-35 model is not deployed, Click **Create**. 
    1. Model deployment name: *gpt-35* (any name is fine)
