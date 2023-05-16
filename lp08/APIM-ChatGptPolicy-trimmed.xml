@@ -99,7 +99,7 @@
                 <return-response>
                     <set-status code="401" reason="Error" />
                     <set-body>@{
-                        return "Subscription Key was not found. This demo may be easier, Rob, if you disable the Subscription requirement in the settings of the API.";
+                        return "Subscription Key was not found. This demo may be easier, if you disable the Subscription requirement in the settings of the API.";
                 }</set-body>
                 </return-response>
             </when>
