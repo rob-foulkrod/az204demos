@@ -1,0 +1,119 @@
+<policies>
+    <inbound>
+        <base />
+        <set-query-parameter name="api-version" exists-action="override">
+            <value>2023-03-15-preview</value>
+        </set-query-parameter>
+        <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+        </set-header>
+        <set-header name="api-key" exists-action="override">
+            <value>{{chat-gpt-key}}</value>
+        </set-header>
+        <set-variable name="content" value="@(context.Request.Url.Query.GetValueOrDefault("content"))" />
+        <set-variable name="debugging" value="@(context.Request.Url.Query.GetValueOrDefault("debugging"))" />
+        <set-query-parameter name="subscription-key" exists-action="delete" />
+        <set-query-parameter name="debugging" exists-action="delete" />
+        <set-query-parameter name="content" exists-action="delete" />
+    </inbound>
+    <backend>
+        <!-- Setup a response-variable-name to hold the response from the backend service-->
+        <send-request mode="copy" response-variable-name="chatgpt-response" timeout="20" ignore-error="false">
+            <!-- Set the method to POST as the ChatGPT service MUST receive a POST call-->
+            <set-method>POST</set-method>
+            <set-body>@{
+                var content = context.Variables.GetValueOrDefault<string>("content");
+
+                // Multiple messages can be assigned to the messages array with a role of system or user.
+                // Watch quotes in the content. 
+                //   You will escape double quotes like ""test""
+                //   and you will escape single quotes like \'test\'
+                var body = @"{
+                                'messages': [
+                                    {
+                                    'role': 'system',
+                                    'content': 'You will answer every question in the form of a Shakespearean sonnet.'
+                                    }
+                                ],
+                                'temperature': 0.7,
+                                'top_p': 0.95,
+                                'frequency_penalty': 0,
+                                'presence_penalty': 0,
+                                'max_tokens': 800,
+                                'stop': null
+                            }";
+
+                // Add the user content portion to messages
+                var bodyObject = JObject.Parse(body);
+                var messages = bodyObject["messages"] as JArray;
+                messages.Add(new JObject(
+                    new JProperty("role", "user"),
+                    new JProperty("content", content)
+                ));
+
+                return bodyObject.ToString();
+            }</set-body>
+        </send-request>
+    </backend>
+    <outbound>
+        <choose>
+            <when condition="@(((IResponse)context.Variables["chatgpt-response"]).StatusCode == 200)">
+                <return-response>
+                    <set-status code="200" reason="Ok" />
+                    <set-body>@{
+                        var originalContentEncoded = context.Variables.GetValueOrDefault<string>("content");
+                        var originalContent = System.Net.WebUtility.UrlDecode(originalContentEncoded);
+                        var chatResponse = ((IResponse)context.Variables["chatgpt-response"]).Body.As<JObject>();
+
+                        var returnResponse = new JObject(
+                            new JProperty("chatbotAnswered", true),
+                            new JProperty("question", originalContent),
+                            new JProperty("chatResponse", chatResponse),
+                            new JProperty("StatusCode", ((IResponse)context.Variables["chatgpt-response"]).StatusCode)
+                        ).ToString();
+                        return returnResponse.ToString();
+                    }</set-body>
+                </return-response>
+            </when>
+            <otherwise>
+                <return-response>
+                    <set-body>@{
+                            var chatResponse = ((IResponse)context.Variables["chatgpt-response"]);
+
+                            var returnResponse = new JObject(
+                                new JProperty("chatbotAnswered", false),
+                                new JProperty("chatResponse", chatResponse.Body.As<JObject>().ToString()),
+                                new JProperty("StatusCode", ((IResponse)context.Variables["chatgpt-response"]).StatusCode)
+                            ).ToString();
+                            return returnResponse.ToString();
+                        }</set-body>
+                </return-response>
+            </otherwise>
+        </choose>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+        <choose>
+            <when condition="@(context.LastError.Reason == "SubscriptionKeyNotFound")">
+                <return-response>
+                    <set-status code="401" reason="Error" />
+                    <set-body>@{
+                        return "Subscription Key was not found. This demo may be easier, Rob, if you disable the Subscription requirement in the settings of the API.";
+                }</set-body>
+                </return-response>
+            </when>
+            <otherwise>
+                <return-response>
+                    <set-status code="500" reason="Error" />
+                    <set-body>@{
+
+                    var returnResponse = new JObject(new JProperty("Failed", true)).ToString();
+                    return returnResponse.ToString();
+
+                }</set-body>
+                </return-response>
+            </otherwise>
+        </choose>
+    </on-error>
+</policies>
