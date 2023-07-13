@@ -30,6 +30,7 @@
         <set-query-parameter name="subscription-key" exists-action="delete" />
         <set-query-parameter name="debugging" exists-action="delete" />
         <set-query-parameter name="content" exists-action="delete" />
+        <rewrite-uri template="/" />
     </inbound>
     <backend>
         <!-- Setup a response-variable-name to hold the response from the backend service-->
