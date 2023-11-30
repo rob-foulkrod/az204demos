@@ -26,8 +26,8 @@ The final result of the demo should be a GET url such as `https://yourAPIMInstan
 2. Create an APIM instance if you don't already have one. Consumption or Developer will work.
 3. Open your APIM instance and click **Named values** in the **APIs** section.
 4. Click **Add** to create a new value
-   1. Name: *chatgpt-api-key* 
-   2. Display name: *chatgpt-api-key* [this name is referenced in the attached policy file]
+   1. Name: *chat-gpt-key* 
+   2. Display name: *chat-gpt-key* [this name is referenced in the attached policy file]
    3. Type: *Secret*
    4. Value: *[paste the key from the pre-create steps]*
 5. Click **Save**.
